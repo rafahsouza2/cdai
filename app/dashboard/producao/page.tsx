@@ -7,6 +7,7 @@ import CompetenciaSelect from '@/components/CompetenciaSelect'
 import ProducaoTable from '@/components/ProducaoTable'
 import UploadForm from '@/components/UploadForm'
 import UploadsList from '@/components/UploadsList'
+import { podeGerenciarUploads } from '@/lib/permissoes'
 
 interface PageProps {
   searchParams: Promise<{ competencia?: string }>
@@ -16,7 +17,7 @@ export default async function ProducaoPage({ searchParams }: PageProps) {
   const { competencia: competenciaParam } = await searchParams
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  const podeEditar = user?.user_metadata?.role === 'faturista' || user?.user_metadata?.role === 'admin'
+  const podeEditar = podeGerenciarUploads(user?.email)
 
   const competencias = await getCompetencias(supabase)
   const competenciaAtual = await getCompetenciaSelecionada(supabase, competenciaParam)

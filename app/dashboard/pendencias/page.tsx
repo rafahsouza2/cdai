@@ -7,6 +7,7 @@ import UploadForm from '@/components/UploadForm'
 import UploadsList from '@/components/UploadsList'
 import PendenciaRow from '@/components/PendenciaRow'
 import { formatBRL } from '@/lib/format'
+import { podeGerenciarUploads } from '@/lib/permissoes'
 
 interface PageProps {
   searchParams: Promise<{ competencia?: string }>
@@ -16,7 +17,8 @@ export default async function PendenciasPage({ searchParams }: PageProps) {
   const { competencia: competenciaParam } = await searchParams
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  const podeEditar = user?.user_metadata?.role === 'faturista' || user?.user_metadata?.role === 'admin'
+  const podeUpload = podeGerenciarUploads(user?.email)
+  const podeJustificar = user?.user_metadata?.role === 'faturista' || user?.user_metadata?.role === 'admin'
 
   const competencias = await getCompetencias(supabase)
   const competenciaAtual = await getCompetenciaSelecionada(supabase, competenciaParam)
@@ -45,7 +47,7 @@ export default async function PendenciasPage({ searchParams }: PageProps) {
         )}
       </div>
 
-      {podeEditar && (
+      {podeUpload && (
         <div className="action-bar">
           <UploadForm
             tipo="pendencias"
@@ -103,7 +105,7 @@ export default async function PendenciasPage({ searchParams }: PageProps) {
                   </thead>
                   <tbody>
                     {linhas.map(l => (
-                      <PendenciaRow key={l.id} pendencia={l} podeEditar={podeEditar} />
+                      <PendenciaRow key={l.id} pendencia={l} podeEditar={podeJustificar} />
                     ))}
                   </tbody>
                 </table>
@@ -113,7 +115,7 @@ export default async function PendenciasPage({ searchParams }: PageProps) {
         )
       })}
 
-      <UploadsList uploads={uploads} podeEditar={podeEditar} />
+      <UploadsList uploads={uploads} podeEditar={podeUpload} />
     </>
   )
 }

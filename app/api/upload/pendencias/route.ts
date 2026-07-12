@@ -2,14 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { parsePendencias, type LinhaPendencia } from '@/lib/parse-pendencias'
 import { competenciaLabel } from '@/lib/format'
+import { podeGerenciarUploads } from '@/lib/permissoes'
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ erro: 'Não autenticado.' }, { status: 401 })
 
-  const role = user.user_metadata?.role
-  if (role !== 'faturista' && role !== 'admin') {
+  if (!podeGerenciarUploads(user.email)) {
     return NextResponse.json({ erro: 'Sem permissão para enviar arquivos.' }, { status: 403 })
   }
 

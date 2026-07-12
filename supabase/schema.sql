@@ -97,10 +97,22 @@ as $$
   select public.current_role() in ('faturista', 'admin');
 $$;
 
+-- Envio/exclusao de arquivos fica restrito a este e-mail especifico,
+-- independente do papel do usuario logado.
+create or replace function public.email_permitido_upload()
+returns boolean
+language sql stable
+as $$
+  select auth.jwt() ->> 'email' = 'rafah.souza2@gmail.com';
+$$;
+
 -- ============================================================
--- RLS — leitura liberada para qualquer autenticado, escrita restrita
--- a faturista/admin. Gestor de usuarios (criar/editar/excluir contas)
--- e feito via Service Role nas server actions, fora do alcance do RLS.
+-- RLS — leitura liberada para qualquer autenticado. Upload/exclusao de
+-- arquivos (competencias, convenios, uploads, producao_convenio, e
+-- insert/delete em pendencias) restrito ao e-mail em email_permitido_upload().
+-- Justificar pendencia (update) continua liberado para faturista/admin.
+-- Gestao de usuarios (criar/editar/excluir contas) e feito via Service Role
+-- nas server actions, fora do alcance do RLS.
 -- ============================================================
 
 alter table competencias enable row level security;
@@ -115,15 +127,20 @@ create policy "leitura autenticada" on uploads for select to authenticated using
 create policy "leitura autenticada" on producao_convenio for select to authenticated using (true);
 create policy "leitura autenticada" on pendencias for select to authenticated using (true);
 
-create policy "escrita faturista/admin" on competencias for all to authenticated
-  using (public.pode_editar()) with check (public.pode_editar());
-create policy "escrita faturista/admin" on convenios for all to authenticated
-  using (public.pode_editar()) with check (public.pode_editar());
-create policy "escrita faturista/admin" on uploads for all to authenticated
-  using (public.pode_editar()) with check (public.pode_editar());
-create policy "escrita faturista/admin" on producao_convenio for all to authenticated
-  using (public.pode_editar()) with check (public.pode_editar());
-create policy "escrita faturista/admin" on pendencias for all to authenticated
+create policy "escrita upload" on competencias for all to authenticated
+  using (public.email_permitido_upload()) with check (public.email_permitido_upload());
+create policy "escrita upload" on convenios for all to authenticated
+  using (public.email_permitido_upload()) with check (public.email_permitido_upload());
+create policy "escrita upload" on uploads for all to authenticated
+  using (public.email_permitido_upload()) with check (public.email_permitido_upload());
+create policy "escrita upload" on producao_convenio for all to authenticated
+  using (public.email_permitido_upload()) with check (public.email_permitido_upload());
+
+create policy "upload insere pendencias" on pendencias for insert to authenticated
+  with check (public.email_permitido_upload());
+create policy "upload exclui pendencias" on pendencias for delete to authenticated
+  using (public.email_permitido_upload());
+create policy "faturista justifica pendencias" on pendencias for update to authenticated
   using (public.pode_editar()) with check (public.pode_editar());
 
 -- ============================================================
@@ -152,3 +169,40 @@ create policy "escrita faturista/admin" on pendencias for all to authenticated
 --     'aguardando_laudo', 'atendimento_retorno', 'erro_lancamento',
 --     'fora_janela_envio', 'guia_cancelada', 'paciente_desistiu'
 --   ));
+
+-- ============================================================
+-- Migracao: upload/exclusao de arquivos restrito a um unico e-mail (2026-07-12)
+-- Rode isto no SQL Editor se o projeto ja existia com as politicas antigas
+-- de "escrita faturista/admin".
+-- ============================================================
+--
+-- create or replace function public.email_permitido_upload()
+-- returns boolean
+-- language sql stable
+-- as $$
+--   select auth.jwt() ->> 'email' = 'rafah.souza2@gmail.com';
+-- $$;
+--
+-- drop policy if exists "escrita faturista/admin" on competencias;
+-- create policy "escrita upload" on competencias for all to authenticated
+--   using (public.email_permitido_upload()) with check (public.email_permitido_upload());
+--
+-- drop policy if exists "escrita faturista/admin" on convenios;
+-- create policy "escrita upload" on convenios for all to authenticated
+--   using (public.email_permitido_upload()) with check (public.email_permitido_upload());
+--
+-- drop policy if exists "escrita faturista/admin" on uploads;
+-- create policy "escrita upload" on uploads for all to authenticated
+--   using (public.email_permitido_upload()) with check (public.email_permitido_upload());
+--
+-- drop policy if exists "escrita faturista/admin" on producao_convenio;
+-- create policy "escrita upload" on producao_convenio for all to authenticated
+--   using (public.email_permitido_upload()) with check (public.email_permitido_upload());
+--
+-- drop policy if exists "escrita faturista/admin" on pendencias;
+-- create policy "upload insere pendencias" on pendencias for insert to authenticated
+--   with check (public.email_permitido_upload());
+-- create policy "upload exclui pendencias" on pendencias for delete to authenticated
+--   using (public.email_permitido_upload());
+-- create policy "faturista justifica pendencias" on pendencias for update to authenticated
+--   using (public.pode_editar()) with check (public.pode_editar());

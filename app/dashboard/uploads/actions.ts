@@ -2,14 +2,14 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { podeGerenciarUploads } from '@/lib/permissoes'
 
 export async function excluirUpload(id: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { erro: 'Não autenticado.' }
 
-  const role = user.user_metadata?.role
-  if (role !== 'faturista' && role !== 'admin') {
+  if (!podeGerenciarUploads(user.email)) {
     return { erro: 'Sem permissão para excluir arquivos.' }
   }
 
