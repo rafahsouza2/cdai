@@ -1,6 +1,5 @@
-import * as XLSX from 'xlsx'
-import { normalizeConvenio, parseNumeroPtBr, toISODate } from './format'
-import { isHtmlTable, extrairLinhasHtml } from './parse-html-table'
+import { normalizeConvenio, parseNumeroPtBr, toISODate, isConvenioExcluido } from './format'
+import { lerLinhas } from './read-rows'
 
 export interface LinhaPendencia {
   convenioNome: string
@@ -21,14 +20,7 @@ const COLUNA_ESPERADA = 'DATA ATEND.'
  * subtotal ao final (onde a coluna "Paciente" fica vazia).
  */
 export function parsePendencias(buffer: Buffer): LinhaPendencia[] {
-  let rows: unknown[][]
-  if (isHtmlTable(buffer)) {
-    rows = extrairLinhasHtml(buffer)
-  } else {
-    const wb = XLSX.read(buffer, { type: 'buffer', cellDates: true })
-    const sheet = wb.Sheets[wb.SheetNames[0]]
-    rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: null })
-  }
+  const rows = lerLinhas(buffer, { cellDates: true })
 
   const headerIndex = rows.findIndex(
     row => typeof row[0] === 'string' && row[0].trim().toUpperCase() === COLUNA_ESPERADA
@@ -62,6 +54,10 @@ export function parsePendencias(buffer: Buffer): LinhaPendencia[] {
     if (typeof paciente !== 'string' || !paciente.trim()) break
 
     const { nome, grupo } = normalizeConvenio(String(row[iConvenio] ?? ''))
+    if (isConvenioExcluido(nome)) continue
+
+    const valorProduzido = parseNumeroPtBr(row[iValorProduzido])
+    if (valorProduzido <= 0) continue
 
     linhas.push({
       convenioNome: nome,
@@ -71,7 +67,7 @@ export function parsePendencias(buffer: Buffer): LinhaPendencia[] {
       tipoProcedimento: iTipo !== -1 ? (row[iTipo] as string | null) : null,
       medico: iMedico !== -1 ? (row[iMedico] as string | null) : null,
       executante: iExecutante !== -1 ? (row[iExecutante] as string | null) : null,
-      valorProduzido: parseNumeroPtBr(row[iValorProduzido]),
+      valorProduzido,
     })
   }
 

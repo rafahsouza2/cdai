@@ -1,6 +1,5 @@
-import * as XLSX from 'xlsx'
-import { normalizeConvenio, parseNumeroPtBr } from './format'
-import { isHtmlTable, extrairLinhasHtml } from './parse-html-table'
+import { normalizeConvenio, parseNumeroPtBr, isConvenioExcluido } from './format'
+import { lerLinhas } from './read-rows'
 
 export interface LinhaProducao {
   convenioNome: string
@@ -19,14 +18,7 @@ export interface LinhaProducao {
  * Convenio | Pct Unico | Qtd | Produzido | Cobrado | Recebido | IR | Liquido
  */
 export function parseProducao(buffer: Buffer): LinhaProducao[] {
-  let rows: unknown[][]
-  if (isHtmlTable(buffer)) {
-    rows = extrairLinhasHtml(buffer)
-  } else {
-    const wb = XLSX.read(buffer, { type: 'buffer' })
-    const sheet = wb.Sheets[wb.SheetNames[0]]
-    rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: null })
-  }
+  const rows = lerLinhas(buffer)
 
   const linhas: LinhaProducao[] = []
 
@@ -39,6 +31,7 @@ export function parseProducao(buffer: Buffer): LinhaProducao[] {
     if (/^total/i.test(primeiraCelula.trim())) break
 
     const { nome, grupo } = normalizeConvenio(primeiraCelula)
+    if (isConvenioExcluido(nome)) continue
 
     linhas.push({
       convenioNome: nome,

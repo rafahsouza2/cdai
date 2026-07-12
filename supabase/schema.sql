@@ -63,7 +63,8 @@ create table if not exists pendencias (
   valor_produzido numeric(14,2) not null default 0,
   status text not null default 'pendente' check (status in ('pendente', 'justificada')),
   categoria_justificativa text check (categoria_justificativa in (
-    'glosa', 'aguardando_nf', 'recurso_andamento', 'erro_cadastral', 'cancelado', 'outro'
+    'aguardando_laudo', 'atendimento_retorno', 'erro_lancamento',
+    'fora_janela_envio', 'guia_cancelada', 'paciente_desistiu'
   )),
   observacao text,
   justificado_por uuid references auth.users(id),
@@ -138,3 +139,16 @@ create policy "escrita faturista/admin" on pendencias for all to authenticated
 --
 -- Depois disso, use a tela /dashboard/usuarios (logado como esse admin) para
 -- criar os demais usuarios (faturista, gestor) pela propria interface.
+
+-- ============================================================
+-- Migracao: novas categorias de justificativa de pendencia (2026-07-12)
+-- Rode isto no SQL Editor se o projeto ja existia com as categorias antigas
+-- (glosa, aguardando_nf, recurso_andamento, erro_cadastral, cancelado, outro).
+-- ============================================================
+--
+-- alter table pendencias drop constraint if exists pendencias_categoria_justificativa_check;
+-- alter table pendencias add constraint pendencias_categoria_justificativa_check
+--   check (categoria_justificativa in (
+--     'aguardando_laudo', 'atendimento_retorno', 'erro_lancamento',
+--     'fora_janela_envio', 'guia_cancelada', 'paciente_desistiu'
+--   ));

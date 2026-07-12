@@ -1,7 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
-import { getCompetencias, getCompetenciaSelecionada, getPendenciasPorCompetencia } from '@/lib/data'
+import {
+  getCompetencias, getCompetenciaSelecionada, getPendenciasPorCompetencia, getUploadsPorCompetencia,
+} from '@/lib/data'
 import CompetenciaSelect from '@/components/CompetenciaSelect'
 import UploadForm from '@/components/UploadForm'
+import UploadsList from '@/components/UploadsList'
 import PendenciaRow from '@/components/PendenciaRow'
 import { formatBRL } from '@/lib/format'
 
@@ -18,6 +21,7 @@ export default async function PendenciasPage({ searchParams }: PageProps) {
   const competencias = await getCompetencias(supabase)
   const competenciaAtual = await getCompetenciaSelecionada(supabase, competenciaParam)
   const pendencias = competenciaAtual ? await getPendenciasPorCompetencia(supabase, competenciaAtual.id) : []
+  const uploads = competenciaAtual ? await getUploadsPorCompetencia(supabase, competenciaAtual.id, 'pendencia') : []
 
   const porConvenio = new Map<string, typeof pendencias>()
   for (const p of pendencias) {
@@ -108,6 +112,8 @@ export default async function PendenciasPage({ searchParams }: PageProps) {
           </div>
         )
       })}
+
+      <UploadsList uploads={uploads} podeEditar={podeEditar} />
     </>
   )
 }

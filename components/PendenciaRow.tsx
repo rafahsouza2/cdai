@@ -7,12 +7,12 @@ import { formatBRL } from '@/lib/format'
 import { justificarPendencia, reabrirPendencia } from '@/app/dashboard/pendencias/actions'
 
 const CATEGORIAS = [
-  { value: 'glosa', label: 'Glosa' },
-  { value: 'aguardando_nf', label: 'Aguardando NF/Quitação' },
-  { value: 'recurso_andamento', label: 'Recurso em andamento' },
-  { value: 'erro_cadastral', label: 'Erro cadastral' },
-  { value: 'cancelado', label: 'Cancelado' },
-  { value: 'outro', label: 'Outro' },
+  { value: 'aguardando_laudo', label: 'Aguardando laudo' },
+  { value: 'atendimento_retorno', label: 'Atendimento de retorno' },
+  { value: 'erro_lancamento', label: 'Erro de lançamento' },
+  { value: 'fora_janela_envio', label: 'Fora da janela de envio' },
+  { value: 'guia_cancelada', label: 'Guia cancelada' },
+  { value: 'paciente_desistiu', label: 'Paciente desistiu' },
 ]
 
 function labelCategoria(valor: string | null): string {

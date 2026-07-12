@@ -1,11 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
 import {
   getCompetencias, getCompetenciaSelecionada, getProducaoPorCompetencia,
-  getPendenciasPorCompetencia,
+  getPendenciasPorCompetencia, getUploadsPorCompetencia,
 } from '@/lib/data'
 import CompetenciaSelect from '@/components/CompetenciaSelect'
 import ProducaoTable from '@/components/ProducaoTable'
 import UploadForm from '@/components/UploadForm'
+import UploadsList from '@/components/UploadsList'
 
 interface PageProps {
   searchParams: Promise<{ competencia?: string }>
@@ -20,12 +21,13 @@ export default async function ProducaoPage({ searchParams }: PageProps) {
   const competencias = await getCompetencias(supabase)
   const competenciaAtual = await getCompetenciaSelecionada(supabase, competenciaParam)
 
-  const [producao, pendencias] = competenciaAtual
+  const [producao, pendencias, uploads] = competenciaAtual
     ? await Promise.all([
         getProducaoPorCompetencia(supabase, competenciaAtual.id),
         getPendenciasPorCompetencia(supabase, competenciaAtual.id),
+        getUploadsPorCompetencia(supabase, competenciaAtual.id, 'producao'),
       ])
-    : [[], []]
+    : [[], [], []]
 
   const convenioIdsComPendencia = new Set(
     pendencias.filter(p => p.status === 'pendente').map(p => p.convenio.id)
@@ -61,6 +63,8 @@ export default async function ProducaoPage({ searchParams }: PageProps) {
           <ProducaoTable linhas={producao} convenioIdsComPendencia={convenioIdsComPendencia} />
         </div>
       </div>
+
+      <UploadsList uploads={uploads} podeEditar={podeEditar} />
     </>
   )
 }
