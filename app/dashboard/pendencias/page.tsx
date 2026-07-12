@@ -65,7 +65,7 @@ export default async function PendenciasPage({ searchParams }: PageProps) {
             <div className="kpi-label">Não Cobrado Ainda Não Justificado</div>
             <div className="kpi-value">{formatBRL(totalNaoJustificado)}</div>
           </div>
-          <div className="kpi-card plum">
+          <div className="kpi-card">
             <div className="kpi-label">Total de Lançamentos</div>
             <div className="kpi-value">{pendencias.length}</div>
           </div>

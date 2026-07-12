@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import TopBar from '@/components/TopBar'
-import NavTabs from '@/components/NavTabs'
+import Sidebar from '@/components/Sidebar'
 
 function getInitials(email: string, name?: string): string {
   if (name) {
@@ -24,8 +23,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <div className="dashboard-screen">
-      <TopBar userName={userName} userInitials={userInitials} />
-      <NavTabs userRole={userRole} />
+      <Sidebar userName={userName} userRole={userRole} userInitials={userInitials} />
       <div className="main-content">{children}</div>
     </div>
   )

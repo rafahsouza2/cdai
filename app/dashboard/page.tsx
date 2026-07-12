@@ -40,6 +40,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   const convenioIdsComPendencia = new Set(
     pendencias.filter(p => p.status === 'pendente').map(p => p.convenio.id)
   )
+  const pendenciasAbertas = pendencias.filter(p => p.status === 'pendente').length
 
   return (
     <>
@@ -48,7 +49,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         <CompetenciaSelect competencias={competencias} selecionadaId={competenciaAtual.id} />
       </div>
 
-      <KpiCards kpis={kpis} />
+      <KpiCards kpis={kpis} convenioCount={producao.length} pendenciasAbertas={pendenciasAbertas} />
 
       <div className="panel">
         <div className="panel-header">
