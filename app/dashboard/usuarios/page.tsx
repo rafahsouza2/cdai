@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import UsuariosPage from '@/components/UsuariosPage'
+import { usuarioEhOculto } from '@/lib/permissoes'
 
 export default async function UsuariosAdminPage() {
   const supabase = await createClient()
@@ -22,7 +23,7 @@ export default async function UsuariosAdminPage() {
     const { data, error } = await admin.auth.admin.listUsers({ perPage: 1000 })
     if (error) throw error
     usuarios = (data?.users ?? [])
-      .filter(u => u.email !== me?.email)
+      .filter(u => u.email !== me?.email && !usuarioEhOculto(u.email))
       .map(u => ({
         id: u.id,
         email: u.email ?? '',
