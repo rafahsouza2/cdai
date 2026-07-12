@@ -23,7 +23,9 @@ export default async function PendenciasPage({ searchParams }: PageProps) {
   const competencias = await getCompetencias(supabase)
   const competenciaAtual = await getCompetenciaSelecionada(supabase, competenciaParam)
   const pendencias = competenciaAtual ? await getPendenciasPorCompetencia(supabase, competenciaAtual.id) : []
-  const uploads = competenciaAtual ? await getUploadsPorCompetencia(supabase, competenciaAtual.id, 'pendencia') : []
+  const uploads = competenciaAtual && podeUpload
+    ? await getUploadsPorCompetencia(supabase, competenciaAtual.id, 'pendencia')
+    : []
 
   const porConvenio = new Map<string, typeof pendencias>()
   for (const p of pendencias) {

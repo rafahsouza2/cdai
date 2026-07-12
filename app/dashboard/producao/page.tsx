@@ -26,7 +26,7 @@ export default async function ProducaoPage({ searchParams }: PageProps) {
     ? await Promise.all([
         getProducaoPorCompetencia(supabase, competenciaAtual.id),
         getPendenciasPorCompetencia(supabase, competenciaAtual.id),
-        getUploadsPorCompetencia(supabase, competenciaAtual.id, 'producao'),
+        podeEditar ? getUploadsPorCompetencia(supabase, competenciaAtual.id, 'producao') : [],
       ])
     : [[], [], []]
 
