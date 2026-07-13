@@ -90,6 +90,16 @@ export async function getCompetenciaSelecionada(
   return maisRecenteComDados ?? competencias[0]
 }
 
+export async function getConvenios(supabase: SupabaseClient): Promise<Convenio[]> {
+  const { data, error } = await supabase
+    .from('convenios')
+    .select('id, nome, grupo')
+    .order('nome')
+
+  if (error) throw error
+  return data ?? []
+}
+
 export async function getProducaoPorCompetencia(
   supabase: SupabaseClient,
   competenciaId: string
@@ -122,6 +132,70 @@ export async function getPendenciasPorCompetencia(
     if (a.convenio.nome !== b.convenio.nome) return 0
     return (a.data_atendimento ?? '').localeCompare(b.data_atendimento ?? '')
   })
+}
+
+export interface GlosaLinha {
+  id: string
+  paciente: string | null
+  motivo: string
+  codigo: string | null
+  valor: number
+  observacao: string | null
+  created_at: string
+  convenio: Convenio
+}
+
+export async function getGlosasPorCompetencia(
+  supabase: SupabaseClient,
+  competenciaId: string
+): Promise<GlosaLinha[]> {
+  const { data, error } = await supabase
+    .from('glosas')
+    .select('id, paciente, motivo, codigo, valor, observacao, created_at, convenio:convenios(id, nome, grupo)')
+    .eq('competencia_id', competenciaId)
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return ordenarPorConvenio((data ?? []) as unknown as GlosaLinha[])
+}
+
+export interface EvolucaoGlosasLinha {
+  convenioId: string
+  convenioNome: string
+  porCompetencia: Record<string, number>
+  total: number
+}
+
+export async function getEvolucaoGlosas(supabase: SupabaseClient): Promise<EvolucaoGlosasLinha[]> {
+  const { data, error } = await supabase
+    .from('glosas')
+    .select('competencia_id, valor, convenio:convenios(id, nome)')
+
+  if (error) throw error
+
+  const porConvenio = new Map<string, EvolucaoGlosasLinha>()
+  for (const row of (data ?? []) as unknown as { competencia_id: string; valor: number; convenio: { id: string; nome: string } }[]) {
+    const chave = row.convenio.id
+    if (!porConvenio.has(chave)) {
+      porConvenio.set(chave, { convenioId: chave, convenioNome: row.convenio.nome, porCompetencia: {}, total: 0 })
+    }
+    const linha = porConvenio.get(chave)!
+    linha.porCompetencia[row.competencia_id] = (linha.porCompetencia[row.competencia_id] ?? 0) + row.valor
+    linha.total += row.valor
+  }
+  return [...porConvenio.values()].sort((a, b) => b.total - a.total)
+}
+
+export interface KpisGlosas {
+  totalGlosado: number
+  quantidade: number
+}
+
+export function calcularKpisGlosas(linhas: GlosaLinha[]): KpisGlosas {
+  return {
+    totalGlosado: linhas.reduce((s, l) => s + l.valor, 0),
+    quantidade: linhas.length,
+  }
 }
 
 export interface UploadLinha {

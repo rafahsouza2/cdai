@@ -73,10 +73,25 @@ create table if not exists pendencias (
   created_at timestamptz not null default now()
 );
 
+create table if not exists glosas (
+  id uuid primary key default gen_random_uuid(),
+  competencia_id uuid not null references competencias(id) on delete cascade,
+  convenio_id uuid not null references convenios(id) on delete cascade,
+  paciente text,
+  motivo text not null,
+  codigo text,
+  valor numeric(14,2) not null default 0,
+  observacao text,
+  criado_por uuid references auth.users(id),
+  created_at timestamptz not null default now()
+);
+
 create index if not exists idx_producao_competencia on producao_convenio(competencia_id);
 create index if not exists idx_pendencias_competencia on pendencias(competencia_id);
 create index if not exists idx_pendencias_convenio on pendencias(convenio_id);
 create index if not exists idx_pendencias_status on pendencias(status);
+create index if not exists idx_glosas_competencia on glosas(competencia_id);
+create index if not exists idx_glosas_convenio on glosas(convenio_id);
 
 -- ============================================================
 -- Papel do usuario, lido do user_metadata embutido no JWT
@@ -120,12 +135,14 @@ alter table convenios enable row level security;
 alter table uploads enable row level security;
 alter table producao_convenio enable row level security;
 alter table pendencias enable row level security;
+alter table glosas enable row level security;
 
 create policy "leitura autenticada" on competencias for select to authenticated using (true);
 create policy "leitura autenticada" on convenios for select to authenticated using (true);
 create policy "leitura autenticada" on uploads for select to authenticated using (true);
 create policy "leitura autenticada" on producao_convenio for select to authenticated using (true);
 create policy "leitura autenticada" on pendencias for select to authenticated using (true);
+create policy "leitura autenticada" on glosas for select to authenticated using (true);
 
 create policy "escrita upload" on competencias for all to authenticated
   using (public.email_permitido_upload()) with check (public.email_permitido_upload());
@@ -141,6 +158,9 @@ create policy "upload insere pendencias" on pendencias for insert to authenticat
 create policy "upload exclui pendencias" on pendencias for delete to authenticated
   using (public.email_permitido_upload());
 create policy "faturista justifica pendencias" on pendencias for update to authenticated
+  using (public.pode_editar()) with check (public.pode_editar());
+
+create policy "faturista lanca glosas" on glosas for all to authenticated
   using (public.pode_editar()) with check (public.pode_editar());
 
 -- ============================================================
@@ -205,4 +225,30 @@ create policy "faturista justifica pendencias" on pendencias for update to authe
 -- create policy "upload exclui pendencias" on pendencias for delete to authenticated
 --   using (public.email_permitido_upload());
 -- create policy "faturista justifica pendencias" on pendencias for update to authenticated
+--   using (public.pode_editar()) with check (public.pode_editar());
+
+-- ============================================================
+-- Migracao: aba de Lancamento de Glosas (2026-07-13)
+-- Rode isto no SQL Editor se o projeto ja existia sem a tabela glosas.
+-- ============================================================
+--
+-- create table if not exists glosas (
+--   id uuid primary key default gen_random_uuid(),
+--   competencia_id uuid not null references competencias(id) on delete cascade,
+--   convenio_id uuid not null references convenios(id) on delete cascade,
+--   paciente text,
+--   motivo text not null,
+--   codigo text,
+--   valor numeric(14,2) not null default 0,
+--   observacao text,
+--   criado_por uuid references auth.users(id),
+--   created_at timestamptz not null default now()
+-- );
+--
+-- create index if not exists idx_glosas_competencia on glosas(competencia_id);
+-- create index if not exists idx_glosas_convenio on glosas(convenio_id);
+--
+-- alter table glosas enable row level security;
+-- create policy "leitura autenticada" on glosas for select to authenticated using (true);
+-- create policy "faturista lanca glosas" on glosas for all to authenticated
 --   using (public.pode_editar()) with check (public.pode_editar());
